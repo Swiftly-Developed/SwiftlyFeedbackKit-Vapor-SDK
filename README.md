@@ -48,9 +48,9 @@ func configure(_ app: Application) throws {
 | Environment | URL |
 |-------------|-----|
 | `.local` | `http://localhost:8080` |
-| `.development` | `https://api.feedbackkit.dev.swiftly-developed.com` |
-| `.testflight` | `https://testflight.getfeedbackkit.com` |
-| `.production` | `https://getfeedbackkit.com` |
+| `.development` | `https://api.dev.getfeedbackkit.com` |
+| `.testflight` | `https://api.testflight.getfeedbackkit.com` |
+| `.production` | `https://api.prod.getfeedbackkit.com` |
 | `.custom(URL)` | Any custom URL |
 
 ## SDK Operations (X-API-Key)

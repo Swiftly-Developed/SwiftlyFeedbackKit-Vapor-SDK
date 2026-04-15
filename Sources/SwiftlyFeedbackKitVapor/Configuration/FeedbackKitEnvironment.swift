@@ -13,11 +13,11 @@ public enum FeedbackKitEnvironment: Sendable {
         case .local:
             URL(string: "http://localhost:8080")!
         case .development:
-            URL(string: "https://api.feedbackkit.dev.swiftly-developed.com")!
+            URL(string: "https://api.dev.getfeedbackkit.com")!
         case .testflight:
-            URL(string: "https://testflight.getfeedbackkit.com")!
+            URL(string: "https://api.testflight.getfeedbackkit.com")!
         case .production:
-            URL(string: "https://getfeedbackkit.com")!
+            URL(string: "https://api.prod.getfeedbackkit.com")!
         case .custom(let url):
             url
         }
