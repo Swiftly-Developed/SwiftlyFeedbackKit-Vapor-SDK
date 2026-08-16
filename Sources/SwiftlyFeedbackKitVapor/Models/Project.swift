@@ -60,7 +60,11 @@ public struct ProjectResponse: Content, Sendable {
     public let createdAt: Date?
     public let updatedAt: Date?
     // Slack
-    public let slackWebhookURL: String?
+    /// Named `slackWebhookUrl` (not `slackWebhookURL`) deliberately: the server
+    /// sends `slack_webhook_url`, which `.convertFromSnakeCase` resolves to
+    /// `slackWebhookUrl` — the uppercase-run spelling was permanently nil
+    /// (fix record `2026-08-15`, F2).
+    public let slackWebhookUrl: String?
     public let slackNotifyNewFeedback: Bool
     public let slackNotifyNewComments: Bool
     public let slackNotifyStatusChanges: Bool

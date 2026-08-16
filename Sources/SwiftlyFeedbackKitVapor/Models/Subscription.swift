@@ -67,13 +67,18 @@ public struct PortalSessionResponse: Content, Sendable {
 
 // MARK: - Apple Requests
 
+/// Request for `subscriptions.syncApple`.
+///
+/// The server reads the product and original transaction IDs from the signed
+/// transaction itself, so they are no longer sent (and would not be believed
+/// if they were).
 public struct SyncAppleTransactionRequest: Content, Sendable {
-    public let originalTransactionId: String
-    public let productId: String
+    /// StoreKit 2 signed transaction JWS — `VerificationResult.jwsRepresentation`
+    /// for the transaction being synced.
+    public let signedTransaction: String
 
-    public init(originalTransactionId: String, productId: String) {
-        self.originalTransactionId = originalTransactionId
-        self.productId = productId
+    public init(signedTransaction: String) {
+        self.signedTransaction = signedTransaction
     }
 }
 

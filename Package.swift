@@ -26,5 +26,15 @@ let package = Package(
                 .product(name: "Vapor", package: "vapor"),
             ]
         ),
+        .testTarget(
+            name: "SwiftlyFeedbackKitVaporTests",
+            dependencies: [
+                "SwiftlyFeedbackKitVapor",
+                .product(name: "Vapor", package: "vapor"),
+            ],
+            resources: [
+                .copy("Fixtures"),
+            ]
+        ),
     ]
 )

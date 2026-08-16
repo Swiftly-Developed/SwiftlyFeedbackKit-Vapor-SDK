@@ -34,7 +34,11 @@ public struct SDKUserListResponse: Content, Sendable {
 
 public struct SDKUsersStats: Content, Sendable {
     public let totalUsers: Int
-    public let totalMRR: Double
-    public let usersWithMRR: Int
-    public let averageMRR: Double
+    /// Named `totalMrr` (not `totalMRR`) deliberately: the server sends
+    /// `total_mrr`, and the client's `.convertFromSnakeCase` strategy resolves
+    /// that to `totalMrr` — an uppercase acronym run can never bind
+    /// (fix record `2026-08-15`, F1).
+    public let totalMrr: Double
+    public let usersWithMrr: Int
+    public let averageMrr: Double
 }

@@ -22,6 +22,10 @@ public enum FeedbackKitError: Error, Sendable {
     case decodingError(String)
     /// The SDK has not been configured.
     case notConfigured
+    /// The operation cannot be performed by this SDK's auth surface — thrown
+    /// before any request is issued (e.g. a deprecated operation whose route
+    /// the server registers behind a different credential).
+    case operationNotSupported(String)
 }
 
 extension FeedbackKitError: AbortError {
@@ -36,6 +40,7 @@ extension FeedbackKitError: AbortError {
         case .serverError(let code): HTTPResponseStatus(statusCode: Int(code))
         case .decodingError: .internalServerError
         case .notConfigured: .internalServerError
+        case .operationNotSupported: .internalServerError
         }
     }
 
@@ -51,6 +56,7 @@ extension FeedbackKitError: AbortError {
         case .serverError(let code): "Server error (\(code))"
         case .decodingError(let msg): "Decoding error: \(msg)"
         case .notConfigured: "FeedbackKit has not been configured. Call app.feedbackKit.configure() first."
+        case .operationNotSupported(let msg): msg
         }
     }
 }

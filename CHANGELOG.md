@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`SDKUsersStats` never decoded** — every `AdminUserAPI.stats`/`allStats` call threw `keyNotFound`. The properties `totalMRR`/`usersWithMRR`/`averageMRR` are renamed to `totalMrr`/`usersWithMrr`/`averageMrr`: the server sends `total_mrr` etc., and the decoder's `.convertFromSnakeCase` strategy resolves those keys to the lowercase-acronym spellings, so the uppercase-run names could never bind. (Source-breaking rename, but no working code could have referenced the old names — the decode always threw first.)
+- **`ProjectResponse.slackWebhookURL` was permanently `nil`** on every project read (same snake_case/acronym mechanism, silent because the property is Optional). Renamed to `slackWebhookUrl`, matching the package's existing `logoUrl`/`embedUrl`/`slackWebhookUrl` (request-side) convention.
+- **One unknown feedback row no longer poisons a whole list.** `FeedbackAPI.list` previously decoded via a bare `decode([FeedbackResponse].self)`, so a single row whose `status` or `category` carried a token newer than this SDK failed the entire call. It now uses a tolerant element-drop decode: unknown-enum rows are dropped (order preserved); genuinely malformed rows (missing key, type mismatch) still throw.
+
+### Deprecated
+
+- **`FeedbackAPI.delete(id:)`** — this operation has never worked: the server registers `DELETE /feedbacks/:id` behind Bearer authentication only, so the X-API-Key call was rejected with 401 on every invocation since 1.0.0. It now throws `FeedbackKitError.operationNotSupported` immediately instead of issuing the doomed request. Deletion is an admin action — use `FeedbackKitAdmin`'s `feedback.delete(id:)`.
+
+### Added
+
+- `FeedbackKitError.operationNotSupported(String)` — thrown client-side, before any request, by operations the SDK's auth surface can never perform.
+
 ## [1.1.1] - 2026-04-24
 
 ### Fixed

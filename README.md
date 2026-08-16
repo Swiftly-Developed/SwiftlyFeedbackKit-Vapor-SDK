@@ -215,7 +215,7 @@ let stats = try await admin.dashboard.project(id: projectId)
 
 // SDK user stats
 let userStats = try await admin.users.stats(projectId: projectId)
-print("Total MRR: $\(userStats.totalMRR)")
+print("Total MRR: $\(userStats.totalMrr)")
 
 // Event stats (last 30 days)
 let eventStats = try await admin.events.stats(projectId: projectId, days: 30)
