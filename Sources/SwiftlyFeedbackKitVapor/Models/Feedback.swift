@@ -68,6 +68,9 @@ public struct FeedbackResponse: Content, Sendable {
     public let roadmapVisible: Bool
     public let roadmapTargetDate: Date?
     public let roadmapNote: String?
+    /// Per-provider outbox rows. Optional and omitted by older servers.
+    /// Wire key `sync_states`.
+    public var syncStates: [FeedbackSyncState]?
 
     public var isMerged: Bool { mergedIntoId != nil }
 }

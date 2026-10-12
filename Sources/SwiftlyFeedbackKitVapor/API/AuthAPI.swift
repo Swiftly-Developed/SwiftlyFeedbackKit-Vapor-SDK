@@ -36,8 +36,11 @@ public struct AuthAPI: Sendable {
     }
 
     /// Change the current user's password.
+    ///
+    /// `PUT /auth/password` with `current_password` and `new_password`
+    /// (`ChangePasswordDTO`). A POST with an empty body never matched that route.
     public func changePassword(_ request: ChangePasswordRequest) async throws {
-        try await client.adminPostNoResponse(path: "/auth/password", token: token)
+        try await client.adminPutNoResponse(path: "/auth/password", body: request, token: token)
     }
 
     /// Delete the current user's account.

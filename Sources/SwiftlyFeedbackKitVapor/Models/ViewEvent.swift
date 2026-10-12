@@ -36,6 +36,14 @@ public struct ViewEventsOverview: Content, Sendable {
     public let eventBreakdown: [ViewEventStats]
     public let recentEvents: [ViewEventResponse]
     public let dailyStats: [DailyEventStats]
+    /// `"all"` or `"predefined_only"`. Optional so a response from a server
+    /// that predates this block still decodes. Wire key `event_scope`.
+    public var eventScope: String?
+    /// Whether the tier's retention allowance narrowed the requested window.
+    /// Wire key `retention_clamped`.
+    public var retentionClamped: Bool?
+    /// The tier's retention allowance in days. Wire key `retention_window_days`.
+    public var retentionWindowDays: Int?
 }
 
 public struct DailyEventStats: Content, Sendable {

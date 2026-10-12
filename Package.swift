@@ -30,7 +30,10 @@ let package = Package(
             name: "SwiftlyFeedbackKitVaporTests",
             dependencies: [
                 "SwiftlyFeedbackKitVapor",
-                .product(name: "XCTVapor", package: "vapor"),
+                .product(name: "Vapor", package: "vapor"),
+            ],
+            resources: [
+                .copy("Fixtures"),
             ]
         ),
     ]

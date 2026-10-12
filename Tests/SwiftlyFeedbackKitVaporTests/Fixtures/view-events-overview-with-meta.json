@@ -1,0 +1,16 @@
+{
+  "daily_stats" : [
+
+  ],
+  "event_breakdown" : [
+
+  ],
+  "event_scope" : "predefined_only",
+  "recent_events" : [
+
+  ],
+  "retention_clamped" : true,
+  "retention_window_days" : 30,
+  "total_events" : 2,
+  "unique_users" : 1
+}
