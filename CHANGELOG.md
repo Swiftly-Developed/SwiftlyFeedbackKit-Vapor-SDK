@@ -5,7 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-10-14
+
+Major version: `SyncAppleTransactionRequest` changes shape (see Changed), and `SDKUsersStats` and `ProjectResponse` rename public properties (see Fixed). Both are source-breaking for code that uses them.
+
+### Changed
+
+- **Breaking:** `SyncAppleTransactionRequest` now carries `signedTransaction` (the StoreKit 2 JWS, `VerificationResult.jwsRepresentation`) instead of `originalTransactionId` and `productId`. The server reads both IDs from the signed transaction. Migration: `SyncAppleTransactionRequest(signedTransaction: verification.jwsRepresentation)`.
 
 ### Fixed
 
@@ -73,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Swift 6.2 concurrency support
 - macOS 13+ platform support
 
+[2.0.0]: https://github.com/Swiftly-Developed/SwiftlyFeedbackKit-Vapor-SDK/releases/tag/2.0.0
 [1.1.1]: https://github.com/Swiftly-Developed/SwiftlyFeedbackKit-Vapor-SDK/releases/tag/1.1.1
 [1.1.0]: https://github.com/Swiftly-Developed/SwiftlyFeedbackKit-Vapor-SDK/releases/tag/1.1.0
 [1.0.0]: https://github.com/Swiftly-Developed/SwiftlyFeedbackKit-Vapor-SDK/releases/tag/1.0.0
