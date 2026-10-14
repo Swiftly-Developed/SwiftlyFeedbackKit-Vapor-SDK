@@ -103,6 +103,23 @@ struct VaporSDKKeyContractSuite {
         census("FeedbackResponse",
                storedProperties(of: try decoder.decode(FeedbackResponse.self, from: Fixtures.row(0, ofArrayCorpus: "feedback-tolerance-corpus"))),
                try Fixtures.keyUnion(ofArrayCorpus: "feedback-tolerance-corpus"))
+
+        // METRICS03 phase 07 — the metrics models, censused against the key
+        // UNION across every corpus row (see `Fixtures.metricsMetaKeyUnion`).
+        let summary = try decoder.decode(MetricSummary.self, from: Fixtures.metricsRow("summary_team_all_scope"))
+        let series = try decoder.decode(MetricSeries.self, from: Fixtures.metricsRow("timeseries_daily"))
+        let breakdown = try decoder.decode(MetricBreakdown.self, from: Fixtures.metricsRow("breakdown_event_name_with_overflow"))
+        let events = try decoder.decode(MetricEventList.self, from: Fixtures.metricsRow("events_page"))
+        census("MetricsMeta", storedProperties(of: summary.meta), try Fixtures.metricsMetaKeyUnion())
+        census("MetricSeriesPoint",
+               storedProperties(of: try #require(series.series.first)),
+               try Fixtures.metricsArrayKeyUnion("series", ofRow: "timeseries_daily"))
+        census("MetricBreakdownItem",
+               storedProperties(of: try #require(breakdown.items.first)),
+               try Fixtures.metricsArrayKeyUnion("items", ofRow: "breakdown_event_name_with_overflow"))
+        census("MetricPaginationMeta",
+               storedProperties(of: events.meta),
+               try Fixtures.metricsObjectKeys("meta", ofRow: "events_page"))
         #expect(violations.isEmpty, "\(violations)")
     }
 
@@ -129,6 +146,23 @@ struct VaporSDKKeyContractSuite {
         census("ViewEventResponse",
                storedProperties(of: try decoder.decode([ViewEventResponse].self, from: Fixtures.data("event-wire-corpus"))[0]),
                try Fixtures.keyUnion(ofArrayCorpus: "event-wire-corpus"))
+
+        // METRICS03 phase 07 — the metrics models, censused against the key
+        // UNION across every corpus row (see `Fixtures.metricsMetaKeyUnion`).
+        let summary = try decoder.decode(MetricSummary.self, from: Fixtures.metricsRow("summary_team_all_scope"))
+        let series = try decoder.decode(MetricSeries.self, from: Fixtures.metricsRow("timeseries_daily"))
+        let breakdown = try decoder.decode(MetricBreakdown.self, from: Fixtures.metricsRow("breakdown_event_name_with_overflow"))
+        let events = try decoder.decode(MetricEventList.self, from: Fixtures.metricsRow("events_page"))
+        census("MetricsMeta", storedProperties(of: summary.meta), try Fixtures.metricsMetaKeyUnion())
+        census("MetricSeriesPoint",
+               storedProperties(of: try #require(series.series.first)),
+               try Fixtures.metricsArrayKeyUnion("series", ofRow: "timeseries_daily"))
+        census("MetricBreakdownItem",
+               storedProperties(of: try #require(breakdown.items.first)),
+               try Fixtures.metricsArrayKeyUnion("items", ofRow: "breakdown_event_name_with_overflow"))
+        census("MetricPaginationMeta",
+               storedProperties(of: events.meta),
+               try Fixtures.metricsObjectKeys("meta", ofRow: "events_page"))
         #expect(violations.isEmpty, "\(violations)")
     }
 
@@ -162,6 +196,23 @@ struct VaporSDKKeyContractSuite {
         census("FeedbackResponse",
                storedProperties(of: try decoder.decode(FeedbackResponse.self, from: Fixtures.row(0, ofArrayCorpus: "feedback-tolerance-corpus"))),
                try Fixtures.keyUnion(ofArrayCorpus: "feedback-tolerance-corpus"))
+
+        // METRICS03 phase 07 — the metrics models, censused against the key
+        // UNION across every corpus row (see `Fixtures.metricsMetaKeyUnion`).
+        let summary = try decoder.decode(MetricSummary.self, from: Fixtures.metricsRow("summary_team_all_scope"))
+        let series = try decoder.decode(MetricSeries.self, from: Fixtures.metricsRow("timeseries_daily"))
+        let breakdown = try decoder.decode(MetricBreakdown.self, from: Fixtures.metricsRow("breakdown_event_name_with_overflow"))
+        let events = try decoder.decode(MetricEventList.self, from: Fixtures.metricsRow("events_page"))
+        census("MetricsMeta", storedProperties(of: summary.meta), try Fixtures.metricsMetaKeyUnion())
+        census("MetricSeriesPoint",
+               storedProperties(of: try #require(series.series.first)),
+               try Fixtures.metricsArrayKeyUnion("series", ofRow: "timeseries_daily"))
+        census("MetricBreakdownItem",
+               storedProperties(of: try #require(breakdown.items.first)),
+               try Fixtures.metricsArrayKeyUnion("items", ofRow: "breakdown_event_name_with_overflow"))
+        census("MetricPaginationMeta",
+               storedProperties(of: events.meta),
+               try Fixtures.metricsObjectKeys("meta", ofRow: "events_page"))
         #expect(violations.isEmpty, "\(violations)")
     }
 

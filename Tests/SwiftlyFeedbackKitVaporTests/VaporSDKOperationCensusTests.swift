@@ -25,14 +25,14 @@ extension OpRow: CustomTestStringConvertible {
     var testDescription: String { "\(family).\(label) \(method) \(path)" }
 }
 
-/// One row per public operation — 121 today. Every row drives the REAL client
+/// One row per public operation — 129 today. Every row drives the REAL client
 /// over the recorder and pins method, exact path, and auth surface.
 enum OpCensus {
     static let a = Fixed.idA
     static let b = Fixed.idB
 
     static let sdkSurface: [OpRow] = [
-        OpRow(family: "FeedbackAPI", op: "list", label: "list", method: .GET, path: "/feedbacks", surface: .apiKey) { sdk, _ in
+        OpRow(family: "FeedbackAPI", op: "list", label: "list", method: .GET, path: "/feedbacks?paged=1", surface: .apiKey) { sdk, _ in
             _ = try await sdk.feedback.list()
         },
         OpRow(family: "FeedbackAPI", op: "get", label: "get", method: .GET, path: "/feedbacks/\(a)", surface: .apiKey) { sdk, _ in
@@ -53,14 +53,14 @@ enum OpCensus {
         OpRow(family: "VoteAPI", op: "unvote", label: "unvote", method: .DELETE, path: "/feedbacks/\(a)/votes", surface: .apiKey) { sdk, _ in
             _ = try await sdk.votes.unvote(feedbackId: a, request: CreateVoteRequest(userId: "fixture-end-user"))
         },
-        OpRow(family: "CommentAPI", op: "list", label: "list", method: .GET, path: "/feedbacks/\(a)/comments", surface: .apiKey) { sdk, _ in
+        OpRow(family: "CommentAPI", op: "list", label: "list", method: .GET, path: "/feedbacks/\(a)/comments?paged=1", surface: .apiKey) { sdk, _ in
             _ = try await sdk.comments.list(feedbackId: a)
         },
         OpRow(family: "CommentAPI", op: "create", label: "create", method: .POST, path: "/feedbacks/\(a)/comments", surface: .apiKey) { sdk, _ in
             _ = try await sdk.comments.create(feedbackId: a, request: CreateCommentRequest(content: "Please add dark mode.", userId: "fixture-end-user"))
         },
         OpRow(family: "CommentAPI", op: "delete", label: "delete", method: .DELETE, path: "/feedbacks/\(a)/comments/\(b)", surface: .apiKey) { sdk, _ in
-            try await sdk.comments.delete(feedbackId: a, commentId: b)
+            try await sdk.comments.delete(feedbackId: a, commentId: b, userId: "fixture-end-user")
         },
         OpRow(family: "SDKUserAPI", op: "register", label: "register", method: .POST, path: "/users/register", surface: .apiKey) { sdk, _ in
             _ = try await sdk.users.register(RegisterSDKUserRequest(userId: "fixture-end-user", mrr: 42.5))
@@ -89,7 +89,7 @@ enum OpCensus {
         OpRow(family: "AuthAPI", op: "resendVerification", label: "resendVerification", method: .POST, path: "/auth/resend-verification", surface: .bearer) { _, admin in
             _ = try await admin.auth.resendVerification()
         },
-        OpRow(family: "AuthAPI", op: "changePassword", label: "changePassword", method: .POST, path: "/auth/password", surface: .bearer) { _, admin in
+        OpRow(family: "AuthAPI", op: "changePassword", label: "changePassword", method: .PUT, path: "/auth/password", surface: .bearer) { _, admin in
             try await admin.auth.changePassword(ChangePasswordRequest(currentPassword: "fixture-password", newPassword: "fixture-password-2"))
         },
         OpRow(family: "AuthAPI", op: "deleteAccount", label: "deleteAccount", method: .DELETE, path: "/auth/account", surface: .bearer) { _, admin in
@@ -421,10 +421,57 @@ enum OpCensus {
         },
     ]
 
+    /// METRICS03 phase 07 — the eight metrics operations, four per auth realm.
+    ///
+    /// Written from the contract table one row at a time, never by duplicating
+    /// the row above: four of these differ from their twin only by the facade
+    /// and the `/projects/:p` prefix, and a copy-paste that kept the wrong
+    /// `surface:` would leave the one assertion that guards against a
+    /// production 401 asserting the wrong thing while staying green.
+    ///
+    /// `measures` is required on all eight, so every recorded URL carries a
+    /// query — which is why `normalizePath` below strips one.
+    static let metricsRows: [OpRow] = [
+        OpRow(family: "MetricsAPI", op: "summary", label: "summary", method: .GET,
+              path: "/metrics/summary?measures=feedback_count", surface: .apiKey) { sdk, _ in
+            _ = try await sdk.metrics.summary(measures: [.feedbackCount])
+        },
+        OpRow(family: "MetricsAPI", op: "timeseries", label: "timeseries", method: .GET,
+              path: "/metrics/timeseries?measures=event_count&granularity=day", surface: .apiKey) { sdk, _ in
+            _ = try await sdk.metrics.timeseries(measures: [.eventCount], granularity: .day)
+        },
+        OpRow(family: "MetricsAPI", op: "breakdown", label: "breakdown", method: .GET,
+              path: "/metrics/breakdown?measures=feedback_count&dimension=status", surface: .apiKey) { sdk, _ in
+            _ = try await sdk.metrics.breakdown(measures: [.feedbackCount], dimension: .status)
+        },
+        OpRow(family: "MetricsAPI", op: "events", label: "events", method: .GET,
+              path: "/metrics/events?measures=event_count&page=2&per_page=50", surface: .apiKey) { sdk, _ in
+            _ = try await sdk.metrics.events(measures: [.eventCount], page: 2, perPage: 50)
+        },
+        // The Bearer four. The comma-joined `measures` spelling is pinned here,
+        // on two measures the key realm refuses outright.
+        OpRow(family: "AdminMetricsAPI", op: "summary", label: "summary", method: .GET,
+              path: "/projects/\(a)/metrics/summary?measures=mrr_sum,users_with_mrr", surface: .bearer) { _, admin in
+            _ = try await admin.metrics.summary(projectId: a, measures: [.mrrSum, .usersWithMrr])
+        },
+        OpRow(family: "AdminMetricsAPI", op: "timeseries", label: "timeseries", method: .GET,
+              path: "/projects/\(a)/metrics/timeseries?measures=feedback_count&granularity=week", surface: .bearer) { _, admin in
+            _ = try await admin.metrics.timeseries(projectId: a, measures: [.feedbackCount], granularity: .week)
+        },
+        OpRow(family: "AdminMetricsAPI", op: "breakdown", label: "breakdown", method: .GET,
+              path: "/projects/\(a)/metrics/breakdown?measures=feedback_count&dimension=category", surface: .bearer) { _, admin in
+            _ = try await admin.metrics.breakdown(projectId: a, measures: [.feedbackCount], dimension: .category)
+        },
+        OpRow(family: "AdminMetricsAPI", op: "events", label: "events", method: .GET,
+              path: "/projects/\(a)/metrics/events?measures=event_count&event_name=checkout_completed", surface: .bearer) { _, admin in
+            _ = try await admin.metrics.events(projectId: a, measures: [.eventCount], eventName: "checkout_completed")
+        },
+    ]
+
     static let all: [OpRow] =
         sdkSurface + authRows + projectRows + memberRows +
         dashboardDeviceSubscriptionRows + adminDataRows +
-        integrationRowsA + integrationRowsB
+        integrationRowsA + integrationRowsB + metricsRows
 }
 
 /// QA-UNIT12 Part D — -17 (the 121-operation method + path census) and
@@ -487,7 +534,7 @@ struct VaporSDKOperationCensusSuite {
         // recorder table; -18 asserts its behaviour directly. It is appended by
         // name so this census still sees all 121 declared public operations.
         let tabled = OpCensus.all.map { "\($0.family).\($0.op)" } + ["FeedbackAPI.delete"]
-        #expect(declared.count == 121, "the measured operation count moved: \(declared.count)")
+        #expect(declared.count == 129, "the measured operation count moved: \(declared.count)")
         #expect(declared.sorted() == tabled.sorted(),
                 "census drift — declared but not tabled: \(Set(declared).subtracting(tabled).sorted()); tabled but not declared: \(Set(tabled).subtracting(declared).sorted())")
     }
@@ -520,6 +567,11 @@ struct VaporSDKOperationCensusSuite {
             "DELETE /feedbacks/:p/comments/:p",
             "POST /users/register",
             "POST /events/track",
+            // METRICS03 phase 07 — the key realm's four metrics routes.
+            "GET /metrics/summary",
+            "GET /metrics/timeseries",
+            "GET /metrics/breakdown",
+            "GET /metrics/events",
         ]
         var violations: [String] = []
         for row in OpCensus.all where row.surface == .apiKey {
@@ -548,9 +600,58 @@ struct VaporSDKOperationCensusSuite {
         #expect(stub.requests.isEmpty, "the doomed X-API-Key request must not be issued at all")
     }
 
-    /// Replaces UUID-shaped path segments with `:p`.
+    // MARK: - The query-drop in `normalizePath` really is a no-op for every
+    // operation that predates METRICS03 phase 07.
+    //
+    // The claim "it changes nothing for the shipped rows" is cheap to assert
+    // and worthless unless measured, because the function it changes is the
+    // one deciding whether -18 accepts a route at all. Set equality against
+    // the ten route keys the server registers under `ApiKeyProjectResolver`,
+    // so a normaliser that mangled a key would have to mangle it INTO another
+    // shipped key to survive.
+
+    @Test func normalizePathIsANoOpForTheShippedApiKeyRoutes() {
+        let shippedTen: Set<String> = [
+            "GET /feedbacks",
+            "POST /feedbacks",
+            "GET /feedbacks/:p",
+            "POST /feedbacks/:p/votes",
+            "DELETE /feedbacks/:p/votes",
+            "GET /feedbacks/:p/comments",
+            "POST /feedbacks/:p/comments",
+            "DELETE /feedbacks/:p/comments/:p",
+            "POST /users/register",
+            "POST /events/track",
+        ]
+        let preExisting = OpCensus.all.filter { $0.surface == .apiKey && $0.family != "MetricsAPI" }
+        #expect(preExisting.count == 10, "expected the ten pre-metrics X-API-Key rows, saw \(preExisting.count)")
+        let derived = Set(preExisting.map { "\($0.method) \(normalizePath($0.path))" })
+        #expect(derived == shippedTen,
+                "normalizePath moved a shipped route key — derived but not shipped: \(derived.subtracting(shippedTen).sorted()); shipped but not derived: \(shippedTen.subtracting(derived).sorted())")
+
+        // And it does what phase 07 needs: a query-carrying URL normalises to
+        // its route, not to a route-with-a-query.
+        let metricsKeys = Set(OpCensus.metricsRows.filter { $0.surface == .apiKey }
+            .map { "\($0.method) \(normalizePath($0.path))" })
+        #expect(metricsKeys == [
+            "GET /metrics/summary",
+            "GET /metrics/timeseries",
+            "GET /metrics/breakdown",
+            "GET /metrics/events",
+        ], "metrics route keys: \(metricsKeys.sorted())")
+    }
+
+    /// Derives a ROUTE from a recorded URL suffix: drops the query, then
+    /// replaces UUID-shaped path segments with `:p`.
+    ///
+    /// The query drop arrived with METRICS03 phase 07, whose eight rows all
+    /// carry a required `measures` parameter. It is a no-op for every row that
+    /// predates it — none carried a query — and
+    /// `normalizePathIsANoOpForTheShippedApiKeyRoutes` measures that rather
+    /// than asserting it.
     private func normalizePath(_ path: String) -> String {
-        "/" + path.split(separator: "/").map { segment in
+        let routePart = path.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)[0]
+        return "/" + routePart.split(separator: "/").map { segment in
             UUID(uuidString: String(segment)) != nil ? ":p" : String(segment)
         }.joined(separator: "/")
     }

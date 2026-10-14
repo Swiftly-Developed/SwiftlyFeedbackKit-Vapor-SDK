@@ -32,8 +32,8 @@ struct VaporSDKTransportSuite {
         _ = try? await sdk.comments.list(feedbackId: Fixed.idB)
         let paths = stub.requests.map(\.url.string)
         #expect(paths == [
-            "\(Fixed.apiBase)/feedbacks/\(Fixed.idA)/comments",
-            "\(Fixed.apiBase)/feedbacks/\(Fixed.idB)/comments",
+            "\(Fixed.apiBase)/feedbacks/\(Fixed.idA)/comments?paged=1",
+            "\(Fixed.apiBase)/feedbacks/\(Fixed.idB)/comments?paged=1",
         ], "requests must be recorded in call order")
 
         // A scripted transport failure surfaces as the underlying error — the
@@ -67,7 +67,7 @@ struct VaporSDKTransportSuite {
         let sdk = makeSDK(stub: stub, environment: environment)
         _ = try? await sdk.feedback.list()
         let request = try #require(stub.requests.first)
-        #expect(request.url.string == expectedBase + "/feedbacks")
+        #expect(request.url.string == expectedBase + "/feedbacks?paged=1")
     }
 
     @Test func uriQueryStringBranch() async throws {
@@ -77,12 +77,12 @@ struct VaporSDKTransportSuite {
         let full = try #require(stub.requests.first).url.string
         // Raw values cross the query as snake_case; the `includeMerged` key itself
         // is camelCase — pinned as shipped.
-        #expect(full == "\(Fixed.apiBase)/feedbacks?status=in_progress&category=bug_report&includeMerged=false")
+        #expect(full == "\(Fixed.apiBase)/feedbacks?status=in_progress&category=bug_report&includeMerged=false&paged=1")
 
         let stub2 = StubClient()
         let sdk2 = makeSDK(stub: stub2)
         _ = try? await sdk2.feedback.list(status: .pending)
-        #expect(try #require(stub2.requests.first).url.string == "\(Fixed.apiBase)/feedbacks?status=pending")
+        #expect(try #require(stub2.requests.first).url.string == "\(Fixed.apiBase)/feedbacks?status=pending&paged=1")
     }
 
     // MARK: - -15: SDK-surface headers.
@@ -100,8 +100,8 @@ struct VaporSDKTransportSuite {
             category: .featureRequest,
             userId: "fixture-end-user"
         ))
-        // CommentAPI.create carries the user id in the body ONLY — no header.
-        // Pinned as shipped (finding F4: the X-User-Id surface is inconsistent).
+        // CommentAPI.create sends the body user id as X-User-Id too. The
+        // hidden-over-limit guard in CommentController reads only that header.
         _ = try? await sdk.comments.create(
             feedbackId: Fixed.idA,
             request: CreateCommentRequest(content: "Please add dark mode.", userId: "fixture-end-user")
@@ -112,7 +112,7 @@ struct VaporSDKTransportSuite {
         #expect(requests[0].headers.first(name: "X-User-Id") == "fixture-end-user")
         #expect(requests[1].headers.first(name: "X-User-Id") == nil)
         #expect(requests[2].headers.first(name: "X-User-Id") == "fixture-end-user")
-        #expect(requests[3].headers.first(name: "X-User-Id") == nil)
+        #expect(requests[3].headers.first(name: "X-User-Id") == "fixture-end-user")
     }
 
     @Test func contentTypeAppearsExactlyOnce() async throws {
@@ -163,5 +163,40 @@ struct VaporSDKTransportSuite {
         // Unauthenticated surface: neither.
         #expect(requests[2].headers.bearerAuthorization == nil)
         #expect(requests[2].headers.first(name: "X-API-Key") == nil)
+    }
+
+    @Test func commentDeleteSendsUserIdOrBearerAndRefusesNeither() async throws {
+        let stub = StubClient()
+        let sdk = makeSDK(stub: stub)
+        let path = "/feedbacks/\(Fixed.idA)/comments/\(Fixed.idB)"
+
+        try await sdk.comments.delete(feedbackId: Fixed.idA, commentId: Fixed.idB, userId: "fixture-end-user")
+        try await sdk.comments.delete(
+            feedbackId: Fixed.idA,
+            commentId: Fixed.idB,
+            userId: "fixture-end-user",
+            bearerToken: Fixed.bearerToken
+        )
+        do {
+            try await sdk.comments.delete(feedbackId: Fixed.idA, commentId: Fixed.idB)
+            Issue.record("a key-only comment delete must throw before sending")
+        } catch let error as FeedbackKitError {
+            #expect(caseName(error) == "operationNotSupported")
+        }
+
+        #expect(stub.requests.count == 2)
+        #expect(stub.requests[0].method == .DELETE)
+        #expect(stub.requests[0].url.string == Fixed.apiBase + path)
+        #expect(stub.requests[0].headers.first(name: "X-API-Key") == Fixed.apiKey)
+        #expect(stub.requests[0].headers.first(name: "X-User-Id") == "fixture-end-user")
+        #expect(stub.requests[0].headers.bearerAuthorization == nil)
+        #expect(stub.requests[0].body == nil)
+
+        #expect(stub.requests[1].method == .DELETE)
+        #expect(stub.requests[1].url.string == Fixed.apiBase + path)
+        #expect(stub.requests[1].headers.bearerAuthorization?.token == Fixed.bearerToken)
+        #expect(stub.requests[1].headers.first(name: "X-API-Key") == nil)
+        #expect(stub.requests[1].headers.first(name: "X-User-Id") == nil)
+        #expect(stub.requests[1].body == nil)
     }
 }

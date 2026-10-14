@@ -1,0 +1,20 @@
+{
+  "category" : "other",
+  "comment_count" : 0,
+  "description" : "d",
+  "has_voted" : false,
+  "id" : "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA",
+  "is_hidden_over_limit" : false,
+  "roadmap_visible" : false,
+  "status" : "pending",
+  "sync_states" : [
+    {
+      "provider" : "github",
+      "provider_ref_url" : "https:\/\/example.com\/1",
+      "state" : "pending"
+    }
+  ],
+  "title" : "t",
+  "user_id" : "u",
+  "vote_count" : 1
+}

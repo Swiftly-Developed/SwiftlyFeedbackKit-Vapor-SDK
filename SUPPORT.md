@@ -4,7 +4,7 @@ Need help with the FeedbackKit Vapor SDK? Here's how to get support.
 
 ## Documentation
 
-Visit our documentation at [getfeedbackkit.com](https://getfeedbackkit.com) for guides, API reference, and examples.
+The getting-started guide in this package is [docs/getting-started.md](docs/getting-started.md). The website page is [Vapor SDK](https://getfeedbackkit.com/docs/vapor) once that server build is deployed. The public mirror is [SwiftlyFeedbackKit-Vapor-SDK](https://github.com/Swiftly-Developed/SwiftlyFeedbackKit-Vapor-SDK). Pin `from: "3.0.0"`. Tags `1.1.1` and `2.0.0` do not include this API.
 
 ## Report an Issue
 

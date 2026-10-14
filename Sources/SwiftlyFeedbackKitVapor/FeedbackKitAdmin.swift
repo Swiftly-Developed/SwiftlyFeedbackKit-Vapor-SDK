@@ -33,6 +33,10 @@ public struct FeedbackKitAdmin: Sendable {
     /// Event stats (admin view).
     public var events: AdminEventAPI { AdminEventAPI(client: client, token: token) }
 
+    /// Metrics reads on this (Bearer) surface, scoped per project. The
+    /// X-API-Key twin is `FeedbackKitSDK.metrics`.
+    public var metrics: AdminMetricsAPI { AdminMetricsAPI(client: client, token: token) }
+
     /// Feedback operations requiring admin auth (update, delete, merge).
     public var feedback: AdminFeedbackAPI { AdminFeedbackAPI(client: client, token: token) }
 }

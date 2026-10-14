@@ -21,9 +21,20 @@ struct VaporSDKErrorSuite {
     }
 
     // MARK: - -19: `errorForStatus` over the full status set, per status.
-    // 422 and 429 are pinned AS SHIPPED: no arm, they fall through `default`
-    // to `.serverError(statusCode:)` — fixing that is a deliberate visible red
+    // 422 is pinned AS SHIPPED: no arm, it falls through `default` to
+    // `.serverError(statusCode:)` — fixing that is a deliberate visible red
     // here, not an oversight to be "corrected" in the test (F6).
+    //
+    // 429 was pinned the same way until METRICS03 phase 06 (2026-08-25), which
+    // added the product arm. Re-anchored here in the SAME commit as the product
+    // change and recorded in the CHANGELOG as a behaviour change — a 429 now
+    // surfaces as `.rateLimited(message:)` rather than `.serverError(429)`.
+    // Every other row is unchanged, which the vector gate in the metrics error
+    // suite asserts as a whole rather than row by row.
+    //
+    // These bodies are the BOOLEAN shape (`errorEnvelope(reason:)`), so the
+    // 400/402/403 rows exercise shape B and stay green through the two-body
+    // decode — the enveloped arms key on the body's `code`, not on the status.
 
     @Test(arguments: [
         (400, "badRequest"),
@@ -32,7 +43,7 @@ struct VaporSDKErrorSuite {
         (404, "notFound"),
         (409, "conflict"),
         (422, "serverError"),
-        (429, "serverError"),
+        (429, "rateLimited"),
         (500, "serverError"),
         (503, "serverError"),
     ] as [(Int, String)])
@@ -140,6 +151,17 @@ struct VaporSDKErrorSuite {
             // Added by the F3 fix (2026-08-15): thrown client-side, before any
             // request, by operations the SDK's auth surface can never perform.
             (.operationNotSupported("boom"), .internalServerError, "boom"),
+            // Added by METRICS03 phase 06 (2026-08-25). Each new case needs an
+            // arm in BOTH exhaustive switches; these rows pin what those arms
+            // produce, including the nil-message fallbacks.
+            (.tierUpgradeRequired(code: "METRICS_CUSTOM_EVENTS_REQUIRE_PRO", message: "Fixture reason"), .paymentRequired, "Fixture reason"),
+            (.tierUpgradeRequired(code: "METRICS_CUSTOM_EVENTS_REQUIRE_PRO", message: nil), .paymentRequired, "METRICS_CUSTOM_EVENTS_REQUIRE_PRO"),
+            (.tierUpgradeRequired(code: nil, message: nil), .paymentRequired, "Upgrade required"),
+            (.measureNotAvailable(measure: "measures", message: "Fixture reason"), .forbidden, "Fixture reason"),
+            (.measureNotAvailable(measure: "measures", message: nil), .forbidden, "Measure not available on this authentication surface (measures)"),
+            (.measureNotAvailable(measure: nil, message: nil), .forbidden, "Measure not available on this authentication surface"),
+            (.rateLimited(message: "Fixture reason"), .tooManyRequests, "Fixture reason"),
+            (.rateLimited(message: nil), .tooManyRequests, "Too many requests"),
         ]
         for (error, expectedStatus, expectedReason) in cases {
             #expect(error.status == expectedStatus, "\(caseName(error))")

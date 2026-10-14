@@ -95,6 +95,25 @@ struct VaporSDKFixtureDisciplineSuite {
         }
     }
 
+    // -05 (completeness half): `Fixtures.names` is what
+    // `fixturesAreCanonicalGeneratedForm` iterates, so a corpus sitting in the
+    // directory but missing from the list is UNGATED. The count is derived by
+    // enumerating the directory — a hardcoded number cannot see the next
+    // corpus a later phase drops in and forgets to list.
+    @Test func fixtureNamesCoverTheWholeFixturesDirectory() throws {
+        let onDisk = Set(
+            (FileManager.default.enumerator(at: PackagePaths.fixturesDir, includingPropertiesForKeys: nil)?
+                .compactMap { $0 as? URL } ?? [])
+                .filter { $0.pathExtension == "json" }
+                .map { $0.deletingPathExtension().lastPathComponent }
+        )
+        #expect(!onDisk.isEmpty, "no .json found under Fixtures/ — the enumerator read nothing")
+        let listed = Set(Fixtures.names)
+        #expect(listed == onDisk,
+                "on disk but unlisted (and therefore ungated): \(onDisk.subtracting(listed).sorted()); listed but absent: \(listed.subtracting(onDisk).sorted())")
+        #expect(Fixtures.names.count == onDisk.count, "Fixtures.names has a duplicate")
+    }
+
     // -06: no hand-written JSON literal reaches a decoder outside Fixtures/.
     // The three sibling SDKs that broke this rule were each "careful"
     // (QA-UNIT12 §4.5) — so the rule is enforced by a scan, not by intent.
@@ -105,7 +124,15 @@ struct VaporSDKFixtureDisciplineSuite {
             pattern: "^\\s*" + "\u{22}" + "[A-Za-z0-9_]+" + "\u{22}" + "\\s*:"
         ) // a `"key":` line inside a multiline string literal
         var offenders: [String] = []
-        for file in try PackagePaths.swiftFiles(under: PackagePaths.testsDir) {
+        // The paired positive: "green" means "scanned and clean", never "not
+        // scanned". The denominator moves whenever a file joins the target —
+        // METRICS03 phase 07 took it from 12 to 13, the Linux JSON number
+        // helper plus its test took it from 13 to 15, the wire-contract
+        // suite took it from 15 to 16, and REL-05's live list suite took it
+        // from 16 to 17.
+        let files = try PackagePaths.swiftFiles(under: PackagePaths.testsDir)
+        #expect(files.count == 17, "scanned \(files.count) files under Tests/ — the denominator moved")
+        for file in files {
             let text = try String(contentsOf: file, encoding: .utf8)
             if text.contains(escapedQuoteColon) {
                 offenders.append("\(file.lastPathComponent): inline JSON string literal")

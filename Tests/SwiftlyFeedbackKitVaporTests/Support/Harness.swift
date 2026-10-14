@@ -45,10 +45,129 @@ enum Fixtures {
     static let names = [
         "event-wire-corpus",
         "feedback-tolerance-corpus",
+        "feedback-with-sync-states",
+        "feedback-without-sync-states",
+        "metrics-error-wire-corpus",
+        "metrics-wire-corpus",
         "request-wire-corpus",
         "sdk-user-wire-corpus",
+        "view-events-overview-with-meta",
+        "view-events-overview-without-meta",
         "vote-wire-corpus",
     ]
+
+    /// The metrics error corpus's `enveloped` rows — shape A, `error` an object.
+    static func envelopedErrorRows() throws -> [[String: Any]] {
+        try section("enveloped")
+    }
+
+    /// The metrics error corpus's `middleware` rows — shape B, `error` a boolean.
+    static func middlewareErrorRows() throws -> [[String: Any]] {
+        try section("middleware")
+    }
+
+    /// The metrics error corpus's `vocabulary` rows.
+    static func vocabularyRows() throws -> [[String: Any]] {
+        try section("vocabulary")
+    }
+
+    /// One row of a named section of the metrics error corpus, re-serialized as
+    /// standalone bytes. Row *extraction*, not fixture authorship.
+    static func errorRowBytes(_ index: Int, section name: String) throws -> Data {
+        let rows = try section(name)
+        guard rows.indices.contains(index) else { throw FixtureError.shape(name) }
+        return try JSONSerialization.data(withJSONObject: rows[index], options: [.sortedKeys])
+    }
+
+    // MARK: - The metrics response corpus (labelled rows, not an array)
+
+    /// The metrics wire corpus, by row label.
+    private static func metricsCorpus() throws -> [String: [String: Any]] {
+        let any = try JSONSerialization.jsonObject(with: data("metrics-wire-corpus"))
+        guard let byLabel = any as? [String: [String: Any]] else {
+            throw FixtureError.shape("metrics-wire-corpus")
+        }
+        return byLabel
+    }
+
+    /// Every row label the metrics corpus carries.
+    static func metricsRowLabels() throws -> Set<String> {
+        Set(try metricsCorpus().keys)
+    }
+
+    /// One named row of the metrics corpus, re-serialized as standalone bytes.
+    /// Row *extraction*, not fixture authorship.
+    static func metricsRow(_ label: String) throws -> Data {
+        guard let row = try metricsCorpus()[label] else {
+            throw FixtureError.shape("metrics-wire-corpus/" + label)
+        }
+        return try JSONSerialization.data(withJSONObject: row, options: [.sortedKeys])
+    }
+
+    /// The union of the keys of every `MetricsMeta`-shaped block across the
+    /// **whole** metrics corpus.
+    ///
+    /// Per-row, the metrics block is `metrics` where the row carries one (the
+    /// event feed, whose `meta` is pagination) and `meta` otherwise. The union
+    /// rather than any single row is the honest oracle for an optionality
+    /// census: the summary row deliberately omits `granularity` — that absence
+    /// is the contract, not a defect — and censusing against that row alone
+    /// reports a correct optional as a phantom.
+    static func metricsMetaKeyUnion() throws -> Set<String> {
+        var union: Set<String> = []
+        for (_, row) in try metricsCorpus() {
+            if let block = row["metrics"] as? [String: Any] {
+                union.formUnion(block.keys)
+            } else if let block = row["meta"] as? [String: Any] {
+                union.formUnion(block.keys)
+            }
+        }
+        return union
+    }
+
+    /// The keys of one nested object of one named metrics-corpus row.
+    static func metricsObjectKeys(_ key: String, ofRow label: String) throws -> Set<String> {
+        guard let row = try metricsCorpus()[label], let object = row[key] as? [String: Any] else {
+            throw FixtureError.shape("metrics-wire-corpus/" + label + "/" + key)
+        }
+        return Set(object.keys)
+    }
+
+    /// The union of the keys of the objects in one nested array of one named
+    /// metrics-corpus row.
+    static func metricsArrayKeyUnion(_ key: String, ofRow label: String) throws -> Set<String> {
+        guard let row = try metricsCorpus()[label], let elements = row[key] as? [[String: Any]] else {
+            throw FixtureError.shape("metrics-wire-corpus/" + label + "/" + key)
+        }
+        return elements.reduce(into: Set<String>()) { $0.formUnion($1.keys) }
+    }
+
+    /// Every value of `event_name` appearing anywhere in the named corpora, at
+    /// any depth. The vocabulary oracle for the reserved event names: a
+    /// misspelt constant stops being a subset of what the corpora carry.
+    static func eventNameValues(inCorpora names: [String]) throws -> Set<String> {
+        var found: Set<String> = []
+        func walk(_ value: Any) {
+            if let object = value as? [String: Any] {
+                if let name = object["event_name"] as? String { found.insert(name) }
+                object.values.forEach(walk)
+            } else if let array = value as? [Any] {
+                array.forEach(walk)
+            }
+        }
+        for name in names {
+            walk(try JSONSerialization.jsonObject(with: data(name)))
+        }
+        return found
+    }
+
+    private static func section(_ name: String) throws -> [[String: Any]] {
+        let any = try JSONSerialization.jsonObject(with: data("metrics-error-wire-corpus"))
+        guard let bySection = any as? [String: Any], let rows = bySection[name] as? [[String: Any]] else {
+            throw FixtureError.shape("metrics-error-wire-corpus/\(name)")
+        }
+        return rows
+    }
 
     static func data(_ name: String) throws -> Data {
         guard let url = Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures") else {
@@ -194,9 +313,12 @@ func caseName(_ error: FeedbackKitError) -> String {
     case .unauthorized: "unauthorized"
     case .invalidApiKey: "invalidApiKey"
     case .paymentRequired: "paymentRequired"
+    case .tierUpgradeRequired: "tierUpgradeRequired"
     case .forbidden: "forbidden"
+    case .measureNotAvailable: "measureNotAvailable"
     case .notFound: "notFound"
     case .conflict: "conflict"
+    case .rateLimited: "rateLimited"
     case .serverError: "serverError"
     case .decodingError: "decodingError"
     case .notConfigured: "notConfigured"

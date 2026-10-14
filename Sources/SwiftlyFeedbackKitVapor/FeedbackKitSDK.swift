@@ -19,4 +19,9 @@ public struct FeedbackKitSDK: Sendable {
 
     /// Event tracking.
     public var events: EventAPI { EventAPI(client: client) }
+
+    /// Metrics reads on this (X-API-Key) surface. The Bearer twin is
+    /// `FeedbackKitAdmin.metrics`, which reaches the revenue and audience
+    /// measures this one refuses.
+    public var metrics: MetricsAPI { MetricsAPI(client: client) }
 }
