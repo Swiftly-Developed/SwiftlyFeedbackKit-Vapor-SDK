@@ -29,7 +29,7 @@ public struct FeedbackAPI: Sendable {
         if let status { query.append(URLQueryItem(name: "status", value: status.rawValue)) }
         if let category { query.append(URLQueryItem(name: "category", value: category.rawValue)) }
         if let includeMerged { query.append(URLQueryItem(name: "includeMerged", value: "\(includeMerged)")) }
-        return try await SDKListPage.collect(page: page, perPage: perPage) { extra in
+        return try await SDKListPage.collect(path: "/feedbacks", logger: client.logger, page: page, perPage: perPage) { extra in
             try await client.getData(path: "/feedbacks", queryItems: query + extra, userId: userId)
         } decode: { data in
             try SDKListPage.decoding { try Self.decodePage(data) }

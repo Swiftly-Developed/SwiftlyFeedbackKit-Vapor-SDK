@@ -279,7 +279,7 @@ public struct FeedbackKitClient: Sendable {
             }
             return .unauthorized
         case 402: return .paymentRequired(message: message)
-        case 403: return .forbidden
+        case 403: return .forbidden(message: message)
         case 404: return .notFound
         case 409: return .conflict
         case 429: return .rateLimited(message: message)

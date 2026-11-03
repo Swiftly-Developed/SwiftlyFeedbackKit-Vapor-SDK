@@ -15,9 +15,10 @@ public struct CommentAPI: Sendable {
         page: Int? = nil,
         perPage: Int? = nil
     ) async throws -> [CommentResponse] {
-        try await SDKListPage.collect(page: page, perPage: perPage) { extra in
+        let path = "/feedbacks/\(feedbackId)/comments"
+        return try await SDKListPage.collect(path: path, logger: client.logger, page: page, perPage: perPage) { extra in
             try await client.getData(
-                path: "/feedbacks/\(feedbackId)/comments",
+                path: path,
                 queryItems: extra,
                 userId: userId
             )

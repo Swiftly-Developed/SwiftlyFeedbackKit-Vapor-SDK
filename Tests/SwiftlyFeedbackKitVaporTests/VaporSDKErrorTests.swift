@@ -169,3 +169,72 @@ struct VaporSDKErrorSuite {
         }
     }
 }
+
+/// A 403 keeps the server's reason. Vote and comment refusals put the cause there, so a
+/// completed item, an archived project and a role failure must not all read "Forbidden".
+@Suite("VaporSDK forbidden reason")
+struct VaporSDKForbiddenReasonSuite {
+
+    private func thrownError(body: Data?) async throws -> FeedbackKitError {
+        let stub = StubClient()
+        let sdk = makeSDK(stub: stub)
+        stub.script(status: .forbidden, body: body)
+        do {
+            _ = try await sdk.feedback.get(id: Fixed.idA)
+            Issue.record("expected 403 to throw")
+            throw FeedbackKitError.notConfigured
+        } catch let error as FeedbackKitError {
+            return error
+        }
+    }
+
+    @Test func aBooleanBodyKeepsItsReason() async throws {
+        let reason = "Cannot vote on feedback that is completed"
+        let error = try await thrownError(body: try errorEnvelope(reason: reason))
+        guard case .forbidden(let message) = error else {
+            Issue.record("mapped to \(caseName(error))")
+            return
+        }
+        #expect(message == reason)
+        #expect(error.reason == reason)
+        #expect(error.status == .forbidden)
+    }
+
+    @Test func noBodyStillReadsForbidden() async throws {
+        let error = try await thrownError(body: nil)
+        guard case .forbidden(let message) = error else {
+            Issue.record("mapped to \(caseName(error))")
+            return
+        }
+        #expect(message == nil)
+        #expect(error.reason == "Forbidden")
+    }
+
+    /// Every shape a 1.x host could have written. This suite compiling is the proof.
+    @Test func existingCallSitesStillCompileAndMatch() {
+        let bare: FeedbackKitError = .forbidden
+        #expect(bare.reason == "Forbidden")
+
+        func thrower() throws { throw FeedbackKitError.forbidden }
+        #expect(throws: FeedbackKitError.self) { try thrower() }
+
+        func viaSwitch(_ error: FeedbackKitError) -> Bool {
+            switch error {
+            case .forbidden: true
+            default: false
+            }
+        }
+        func viaCatch(_ error: FeedbackKitError) -> Bool {
+            do { throw error } catch FeedbackKitError.forbidden { return true } catch { return false }
+        }
+        func viaIfCase(_ error: FeedbackKitError) -> Bool {
+            if case .forbidden = error { return true }
+            return false
+        }
+        #expect(viaSwitch(.forbidden(message: "x")))
+        #expect(viaCatch(.forbidden(message: "x")))
+        #expect(viaIfCase(.forbidden(message: "x")))
+        #expect(viaIfCase(.forbidden))
+        #expect(!viaSwitch(.notFound))
+    }
+}

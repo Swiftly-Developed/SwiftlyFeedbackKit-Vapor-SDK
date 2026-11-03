@@ -129,9 +129,9 @@ struct VaporSDKFixtureDisciplineSuite {
         // METRICS03 phase 07 took it from 12 to 13, the Linux JSON number
         // helper plus its test took it from 13 to 15, the wire-contract
         // suite took it from 15 to 16, and REL-05's live list suite took it
-        // from 16 to 17.
+        // from 16 to 17, and RESILIENCE01's page-follow suite took it from 17 to 18.
         let files = try PackagePaths.swiftFiles(under: PackagePaths.testsDir)
-        #expect(files.count == 17, "scanned \(files.count) files under Tests/ — the denominator moved")
+        #expect(files.count == 18, "scanned \(files.count) files under Tests/ — the denominator moved")
         for file in files {
             let text = try String(contentsOf: file, encoding: .utf8)
             if text.contains(escapedQuoteColon) {

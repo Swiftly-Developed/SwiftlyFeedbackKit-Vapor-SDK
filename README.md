@@ -1,6 +1,6 @@
 # SwiftlyFeedbackKit for Vapor
 
-> **This README matches the source in this repository, version 3.0.0.** It is not a registry package. Pin `from: "3.0.0"` on [SwiftlyFeedbackKit-Vapor-SDK](https://github.com/Swiftly-Developed/SwiftlyFeedbackKit-Vapor-SDK). Tags `1.1.1` and `2.0.0` do not include metrics, `PUT /auth/password`, comment `X-User-Id`, `sync_states`, or the per-call JSON coder. Walk through a host app in [docs/getting-started.md](docs/getting-started.md). Every Swift sample below is copied from [`Examples/GettingStarted`](Examples/GettingStarted), which `swift build` type-checks.
+> **This README matches the source in this repository, version 3.1.0.** It is not a registry package. The newest tag is `3.0.0`: pin `from: "3.0.0"` on [SwiftlyFeedbackKit-Vapor-SDK](https://github.com/Swiftly-Developed/SwiftlyFeedbackKit-Vapor-SDK). Tags `1.1.1` and `2.0.0` do not include metrics, `PUT /auth/password`, comment `X-User-Id`, `sync_states`, or the per-call JSON coder. Walk through a host app in [docs/getting-started.md](docs/getting-started.md). Every Swift sample below is copied from [`Examples/GettingStarted`](Examples/GettingStarted), which `swift build` type-checks.
 
 A server-side Swift SDK for integrating [FeedbackKit](https://getfeedbackkit.com) into your [Vapor](https://vapor.codes) applications. Submit feedback, manage votes and comments, track events, and administer projects — all from your server-side Swift code.
 
@@ -551,7 +551,7 @@ Every API method throws `FeedbackKitError`, which conforms to `AbortError`. Whic
 | `unauthorized`, `invalidApiKey` | 401 |
 | `paymentRequired(message:)` | 402, boolean body |
 | `tierUpgradeRequired(code:message:)` | 402, enveloped metrics body |
-| `forbidden` | 403, role or suspended project |
+| `forbidden(message:)` | 403, with the server's reason: a role, a suspended or archived project, or a closed item |
 | `measureNotAvailable(measure:message:)` | 403, measure needs Bearer |
 | `notFound` | 404 |
 | `conflict` | 409 |

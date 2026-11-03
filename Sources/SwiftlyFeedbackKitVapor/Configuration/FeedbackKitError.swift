@@ -17,8 +17,9 @@ public enum FeedbackKitError: Error, Sendable {
     /// Distinct from ``paymentRequired(message:)``, which stays the case for
     /// the boolean-shaped 402 every other surface sends.
     case tierUpgradeRequired(code: String?, message: String?)
-    /// 403 - Insufficient permissions or archived project.
-    case forbidden
+    /// 403 - Insufficient permissions, an archived project, or a closed item. `message` is the
+    /// server's reason, for example `Cannot vote on feedback that is completed`.
+    case forbidden(message: String?)
     /// 403 - A metrics measure the caller's *authentication surface* cannot
     /// serve (`METRICS_MEASURE_REQUIRES_BEARER`) — a surface refusal, not a
     /// role denial and not a billing one, so it is deliberately not named
@@ -45,6 +46,10 @@ public enum FeedbackKitError: Error, Sendable {
     /// before any request is issued (e.g. a deprecated operation whose route
     /// the server registers behind a different credential).
     case operationNotSupported(String)
+
+    /// A 403 with no reason. `.forbidden` keeps compiling wherever a host builds this error.
+    /// Matching `case .forbidden:` needs no payload and goes to the enum case.
+    public static var forbidden: FeedbackKitError { .forbidden(message: nil) }
 }
 
 extension FeedbackKitError: AbortError {
@@ -73,7 +78,7 @@ extension FeedbackKitError: AbortError {
         case .invalidApiKey: "Invalid API key"
         case .paymentRequired(let msg): msg ?? "Payment required"
         case .tierUpgradeRequired(let code, let msg): msg ?? code ?? "Upgrade required"
-        case .forbidden: "Forbidden"
+        case .forbidden(let msg): msg ?? "Forbidden"
         case .measureNotAvailable(let measure, let msg):
             msg ?? "Measure not available on this authentication surface\(measure.map { " (\($0))" } ?? "")"
         case .notFound: "Not found"

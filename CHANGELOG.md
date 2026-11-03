@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [3.1.0] - 2026-11-03
+
+**Check before you upgrade.** A 403 now carries the server's reason. Code that builds `.forbidden` or matches `case .forbidden:` compiles unchanged, but the error's text is now the server's reason, so code that compares the description with "Forbidden" will stop matching.
+
+### Changed
+
+- The copyright holder in `LICENSE` and the source headers is now Swiftly Workspace BV. The licence is still MIT.
+- The contact addresses in the repository docs are now getfeedbackkit.com aliases: security@ in `SECURITY.md`, support@ in `SUPPORT.md`, hello@ in `CODE_OF_CONDUCT.md` and developers@ in `CONTRIBUTING.md`.
+
+### Fixed
+
+- Listing feedback or comments can no longer send requests without end when a proxy or cache returns a stale or incomplete page. If a later page's number is missing or is not the page requested, the list stops and returns the rows it already has, and it never follows more than 100 further pages. When either happens, the SDK logs one warning with the path and the two page numbers. A later page or first page with no `meta.page` no longer throws a decoding error.
+- A 403 keeps the server's reason, in the case and in `AbortError.reason`. A completed item, an archived project and a permission failure used to all read "Forbidden".
+
+### Added
+
+- `FeedbackKitError.forbidden(message:)`. A switch can now read the server's reason with `case .forbidden(let message):`.
+  - **Source compatibility.** The `forbidden` case gained an optional `message`. A static `FeedbackKitError.forbidden` (no message) keeps every existing `throw .forbidden` and `return .forbidden` compiling, and `case .forbidden:` still matches every 403, with or without a message. No case is added or removed, so an exhaustive `switch` needs no new branch.
+  - **What does change.** `description` and `AbortError.reason` return the server's text, such as `Cannot vote on feedback that is completed`, and fall back to "Forbidden" only when the server sends none.
+
 ## [3.0.0] - 2026-10-14
 
 Builds on the tagged 2.0.0 below. Major version, because of the two source- and behaviour-breaking changes in the next paragraph. Adds the metrics read API, a decoder for the server's enveloped error body with three new `FeedbackKitError` cases, and opt-in paging on the feedback and comment lists, and fixes a set of wire mismatches. Pin `from: "3.0.0"`.
